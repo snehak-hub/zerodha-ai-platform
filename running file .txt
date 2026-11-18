@@ -1,0 +1,59 @@
+You’re connected, and postgres=# is the correct prompt. The earlier error happened because pass@123 and pass123 were typed at that prompt. psql read them as SQL, and the postgres-# prompt meant it was still waiting for the statement to finish, so your CREATE USER got glued onto them. Your password was already accepted when you connected, so you don’t type it again here.
+
+The prompt is clean again, so paste these one at a time, pressing Enter after each:
+
+sql
+CREATE USER zerodha WITH PASSWORD 'zerodha_pw';
+
+Expected: CREATE ROLE
+
+sql
+CREATE DATABASE zerodha_ai OWNER zerodha;
+
+Expected: CREATE DATABASE
+
+Then type \q and press Enter to exit.
+
+zerodha_pw is the password for the new zerodha user, and it should match DATABASE_URL in your .env. It is not the pass@123 password you set for postgres. Keep the two separate.
+
+If you ever see postgres-# again, the statement is unfinished. Type \r and press Enter to reset it, or end the statement with ;.
+
+After that, go back to PowerShell in your project folder and run:
+
+powershell
+copy .env.example .env
+python -m venv env
+env\Scripts\Activate.ps1
+pip install -r requirements.txt
+alembic upgrade head
+python -m uvicorn backend.main:app --port 8000 --reload
+
+alembic upgrade head should print Running upgrade -> 0001, initial schema. If anything fails, paste the error here.
+
+Checking why the root address returns not found.
+
+That page means your backend is running. FastAPI shows {"detail":"Not Found"} for http://127.0.0.1:8000/ because the API has no page at the root address. It isn’t an error.
+
+Check the backend and database
+
+Open these two addresses in your browser:
+
+http://127.0.0.1:8000/health should show {"status":"HEALTHY","database":"OK",...}. If it says "database":"OK", PostgreSQL is connected and set up.
+http://127.0.0.1:8000/docs shows the interactive API page, where you can try the endpoints.
+Open the actual website
+
+The website is the frontend, which runs on a different port (3000) and needs its own terminal:
+
+powershell
+cd frontend
+npm install
+npm run dev
+
+Then open http://localhost:3000. It sends you to the sign-in page, where you click “New here? Create an account”. After you register, you reach the dashboard with the 💬 Ask AI button at the bottom-right.
+
+The localhost tab you have open is probably port 3000 already, if the frontend was running before.
+
+Other things to check
+If /health shows "database":"DOWN" or an error, tell me what it says and I’ll help.
+I see you have the Google API keys tab open. If you’re creating the new Gemini key, put it in your .env file as GEMINI_API_KEY=... and restart the backend. The old key from the GitHub repo should be deleted there.
+If the sign-in page says it can’t reach the server, the backend terminal has probably stopped. Start it again with python -m uvicorn backend.main:app --port 8000 --reload from the project folder.
